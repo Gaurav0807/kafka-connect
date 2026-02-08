@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "UserEvent",
+  "namespace": "com.demo.events",
+  "fields": [
+    { "name": "event_id", "type": "string" },
+    { "name": "user_id", "type": "string" },
+    { "name": "event_type", "type": "string" },
+    { "name": "device", "type": "string" },
+    { "name": "country", "type": "string" },
+    { "name": "event_time", "type": "long" }
+  ]
+}

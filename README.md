@@ -1,7 +1,7 @@
 # kafka-connect
 Github Repo Description :- Kafka Connect setup and creation of custom SMT 
 
-** Apache Kafka 
+## Apache Kafka 
 
 Apache Kafka is a real-time data streaming system.
 
@@ -9,7 +9,7 @@ kafka is Different from Queue. In kafka we can reprocess data stays for retentio
 
 Typical Pipeline:- 
 
-** Apps → Kafka → Spark/Flink → S3/Delta → BI
+## Apps → Kafka → Spark/Flink → S3/Delta → BI
 
 Apache Kafka do One Job Durably store and streams events.
 
@@ -29,3 +29,29 @@ Kafka Connect supports Single Message Transform for making changes to data as it
 
 
 ![Kafka Connect UI](/Kafka_UI.png)
+
+
+
+# Create Kafka Topics
+
+```bash
+docker exec -it kafka1 kafka-topics \
+  --bootstrap-server kafka1:29092 \
+  --create \
+  --topic user_events \
+  --partitions 3 \
+  --replication-factor 1
+```
+
+# Check if Kafka Topics Exists or not
+```bash
+docker exec -it kafka1 kafka-topics \
+  --bootstrap-server kafka1:29092 \
+  --list
+```
+
+
+
+
+
+![Kafka Topic](/Kafka_Topic_Data.png)
