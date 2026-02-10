@@ -50,8 +50,35 @@ docker exec -it kafka1 kafka-topics \
   --list
 ```
 
+# Run Kafka Producer :- Produce Data to Kafka Topics
 
-
+```bash
+cd Kafka-Producer
+docker run --rm \
+  --name kafka-producer \
+  --network my-network \
+  kafka-producer
+```
 
 
 ![Kafka Topic](/Kafka_Topic_Data.png)
+
+
+### Add Connector Config
+
+```bash
+curl -X PUT http://localhost:8083/connectors/s3-sink-gr-table-data-connector/config \
+  -H "Content-Type: application/json" \
+  -d @s3-connector.json
+```
+
+![Kafka Connectors](/Kafka_Connectors.png)
+
+### Restart Connector Config
+
+
+```bash
+curl -X POST http://localhost:8083/connectors/s3-sink-gr-table-data-connector/restart
+```
+
+
