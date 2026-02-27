@@ -1,0 +1,58 @@
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+whitelistObjectNames:
+  - "kafka.connect:type=connect-worker-metrics,*"
+  - "kafka.connect:type=connect-worker-rebalance-metrics,*"
+  - "kafka.connect:type=connector-metrics,*"
+  - "kafka.connect:type=connector-task-metrics,*"
+  - "kafka.connect:type=sink-task-metrics,*"
+  - "kafka.connect:type=task-error-metrics,*"
+
+rules:
+  # Worker-level metrics (no connector label)
+  - pattern: "kafka\\.connect<type=connect-worker-metrics><>(\\w[\\w-]+):\\s(.*)"
+    name: "kafka_connect_worker_$1"
+    value: "$2"
+    type: UNTYPED
+
+  # Worker rebalance metrics
+  - pattern: "kafka\\.connect<type=connect-worker-rebalance-metrics><>(\\w[\\w-]+):\\s(.*)"
+    name: "kafka_connect_worker_rebalance_$1"
+    value: "$2"
+    type: UNTYPED
+
+  # Per-connector metrics
+  - pattern: "kafka\\.connect<type=connector-metrics,\\s*connector=(.+)><>(\\w[\\w-]+):\\s(.*)"
+    name: "kafka_connect_connector_$2"
+    labels:
+      connector: "$1"
+    value: "$3"
+    type: UNTYPED
+
+  # Per-task connector metrics
+  - pattern: "kafka\\.connect<type=connector-task-metrics,\\s*connector=(.+),\\s*task=(\\d+)><>(\\w[\\w-]+):\\s(.*)"
+    name: "kafka_connect_task_$3"
+    labels:
+      connector: "$1"
+      task: "$2"
+    value: "$4"
+    type: UNTYPED
+
+  # Sink task metrics
+  - pattern: "kafka\\.connect<type=sink-task-metrics,\\s*connector=(.+),\\s*task=(\\d+)><>(\\w[\\w-]+):\\s(.*)"
+    name: "kafka_connect_sink_$3"
+    labels:
+      connector: "$1"
+      task: "$2"
+    value: "$4"
+    type: UNTYPED
+
+  # Task error metrics
+  - pattern: "kafka\\.connect<type=task-error-metrics,\\s*connector=(.+),\\s*task=(\\d+)><>(\\w[\\w-]+):\\s(.*)"
+    name: "kafka_connect_error_$3"
+    labels:
+      connector: "$1"
+      task: "$2"
+    value: "$4"
+    type: UNTYPED

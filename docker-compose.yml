@@ -1,11 +1,16 @@
 services:
 
   kafka1:
-    image: confluentinc/cp-kafka
+    build:
+      context: ./resources/kafka
+      dockerfile: Dockerfile
     container_name: kafka1
     hostname: kafka1
     ports:
       - "9092:9092"
+      - "7071:7071"
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter/config
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
@@ -20,13 +25,15 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       CLUSTER_ID: 'p8fFEbKGQ22B6M_Da_vCBw'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      # Prometheus JMX exporter (javaagent connects to JMX in-process, no separate JMX port needed)
+      EXTRA_ARGS: >-
+        -javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar=7071:/opt/jmx-exporter/config/kafka-broker.yml
     healthcheck:
       test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka1:29092", "--list"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 1m
-      start_interval: 5s
 
   kafka-ui:
     container_name: kafka-ui
@@ -45,15 +52,23 @@ services:
       DYNAMIC_CONFIG_ENABLED: 'true'
 
   schema-registry:
-    image: confluentinc/cp-schema-registry
+    build:
+      context: ./resources/schema-registry
+      dockerfile: Dockerfile
     container_name: schema-registry
     hostname: schema-registry
     ports:
       - "8081:8081"
+      - "7073:7073"
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter/config
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka1:29092'
       SCHEMA_REGISTRY_LISTENERS: 'http://0.0.0.0:8081'
+      # JMX + Prometheus exporter
+      SCHEMA_REGISTRY_JMX_OPTS: >-
+        -javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar=7073:/opt/jmx-exporter/config/schema-registry.yml
     depends_on:
       - kafka1
     healthcheck:
@@ -62,7 +77,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 1m
-      start_interval: 5s
 
   connect:
     build:
@@ -73,8 +87,10 @@ services:
     ports:
       - 8083:8083
       - 5555:5555
+      - 7072:7072
     volumes:
       - ./schemas:/opt/kafka/schemas
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter/config
     environment:
       CONNECT_BOOTSTRAP_SERVERS: 'kafka1:29092'
       CONNECT_REST_ADVERTISED_HOST_NAME: "connect-s3"
@@ -113,20 +129,23 @@ services:
         -Dcom.sun.management.jmxremote.rmi.port=5555
         -Djava.rmi.server.hostname=connect
         -Dcom.sun.management.jmxremote.local.only=false
+      # Prometheus JMX exporter (javaagent connects to JMX in-process)
+      EXTRA_ARGS: >-
+        -javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar=7072:/opt/jmx-exporter/config/kafka-connect.yml
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 1m
-      start_interval: 5s
-
 
   minio:
     image: minio/minio:RELEASE.2025-02-07T23-21-09Z
     ports:
       - "9000:9000"
       - "9001:9001"
+    environment:
+      MINIO_PROMETHEUS_AUTH_TYPE: public
     command: server --console-address ":9001" /data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -134,8 +153,49 @@ services:
       timeout: 5s
       retries: 5
       start_period: 1m
-      start_interval: 5s
-      
+
+  kafka-producer:
+    build:
+      context: ./Kafka-Producer
+      dockerfile: Dockerfile
+    container_name: kafka-producer
+    hostname: kafka-producer
+    ports:
+      - "8000:8000"
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - kafka1
+      - connect
+      - schema-registry
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
 networks:
   default:
     name: my-network
