@@ -13,5 +13,10 @@ RUN confluent-hub install --no-prompt confluentinc/connect-transforms:1.6.2
 RUN mkdir -p /opt/kafka/test-schemas /opt/kafka/custom-plugins && \
     chmod -R 777 /opt/kafka/test-schemas /opt/kafka/custom-plugins
 
+# Download JMX Prometheus exporter
+RUN mkdir -p /opt/jmx-exporter && \
+    curl -fsSL -o /opt/jmx-exporter/jmx_prometheus_javaagent.jar \
+    https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar
+
 # Switch back to appuser
 USER appuser
