@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka1:7071']
+
+  - job_name: 'kafka-connect'
+    static_configs:
+      - targets: ['connect:7072']
+
+  - job_name: 'schema-registry'
+    static_configs:
+      - targets: ['schema-registry:7073']
+
+  - job_name: 'kafka-producer'
+    static_configs:
+      - targets: ['kafka-producer:8000']
+
+  - job_name: 'minio'
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ['minio:9000']

@@ -1,3 +1,4 @@
 confluent-kafka
 confluent-kafka[avro]
 faker
+prometheus-client

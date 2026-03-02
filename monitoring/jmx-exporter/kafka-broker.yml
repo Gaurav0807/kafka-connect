@@ -1,0 +1,58 @@
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+whitelistObjectNames:
+  # Broker topic metrics - messages, bytes, failed requests
+  - "kafka.server:type=BrokerTopicMetrics,*"
+  # Replica manager - under-replicated partitions, ISR
+  - "kafka.server:type=ReplicaManager,*"
+  # Controller - active controller, leader election
+  - "kafka.controller:type=KafkaController,*"
+  - "kafka.controller:type=ControllerStats,*"
+  # Request handler pool - idle percentage
+  - "kafka.server:type=KafkaRequestHandlerPool,*"
+  # Network request metrics - latency by request type
+  - "kafka.network:type=RequestMetrics,*"
+  # Log flush stats
+  - "kafka.log:type=LogFlushStats,*"
+  # Partition count
+  - "kafka.server:type=ReplicaManager,name=PartitionCount"
+  # Log size
+  - "kafka.log:type=Log,name=Size,*"
+
+rules:
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+), topic=(.+)><>(\w+)
+    name: kafka_server_brokertopicmetrics_$1_$3
+    labels:
+      topic: $2
+    type: GAUGE
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>(\w+)
+    name: kafka_server_brokertopicmetrics_$1_$2
+    type: GAUGE
+
+  - pattern: kafka.server<type=ReplicaManager, name=(.+)><>(\w+)
+    name: kafka_server_replicamanager_$1_$2
+    type: GAUGE
+
+  - pattern: kafka.controller<type=KafkaController, name=(.+)><>(\w+)
+    name: kafka_controller_kafkacontroller_$1_$2
+    type: GAUGE
+
+  - pattern: kafka.controller<type=ControllerStats, name=(.+)><>(\w+)
+    name: kafka_controller_controllerstats_$1_$2
+    type: GAUGE
+
+  - pattern: kafka.server<type=KafkaRequestHandlerPool, name=(.+)><>(\w+)
+    name: kafka_server_kafkarequesthandlerpool_$1_$2
+    type: GAUGE
+
+  - pattern: kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>(\w+)
+    name: kafka_network_requestmetrics_$1_$3
+    labels:
+      request: $2
+    type: GAUGE
+
+  - pattern: kafka.log<type=LogFlushStats, name=(.+)><>(\w+)
+    name: kafka_log_logflushstats_$1_$2
+    type: GAUGE
